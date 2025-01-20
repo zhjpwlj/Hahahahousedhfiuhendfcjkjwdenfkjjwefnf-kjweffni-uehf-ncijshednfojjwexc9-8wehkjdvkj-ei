@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -176,7 +175,7 @@
                 checkingStatus = "checking";
                 results = [];
 
-                const checkPromises = proxyList.map(url => fetch(url, { mode: 'no-cors' })
+                const checkPromises = proxyList.map(url => fetch(url, { method: 'HEAD' })
                     .then(response => ({ url, accessible: response.ok }))
                     .catch(() => ({ url, accessible: false }))
                 );
@@ -215,7 +214,7 @@
             checkingStatus = "checking";
             results = [];
 
-            const checkPromises = proxyList.map(url => fetch(url, { mode: 'no-cors' })
+            const checkPromises = proxyList.map(url => fetch(url, { method: 'HEAD' })
                 .then(response => ({ url, accessible: response.ok }))
                 .catch(() => ({ url, accessible: false }))
             );
@@ -264,5 +263,4 @@
         }
     </script>
 </body>
-
 </html>
