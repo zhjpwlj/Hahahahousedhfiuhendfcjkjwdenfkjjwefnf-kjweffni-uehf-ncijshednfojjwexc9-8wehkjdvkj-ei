@@ -175,7 +175,7 @@
                 checkingStatus = "checking";
                 results = [];
 
-                const checkPromises = proxyList.map(url => fetch(url, { method: 'HEAD' })
+                const checkPromises = proxyList.map(url => fetch(url, { method: 'GET' })
                     .then(response => ({ url, accessible: response.ok }))
                     .catch(() => ({ url, accessible: false }))
                 );
