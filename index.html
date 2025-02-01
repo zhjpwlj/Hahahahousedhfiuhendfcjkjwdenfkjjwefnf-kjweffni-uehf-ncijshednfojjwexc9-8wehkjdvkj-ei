@@ -194,37 +194,39 @@
             }
         }
 
-        async function checkTypedProxies() {
-            const resultDiv = document.getElementById('result');
-            if (checkingStatus) return;
+      async function checkTypedProxies() {
+    const corsProxy = "https://crossorigin.me/";
+    const resultDiv = document.getElementById('result');
+    if (checkingStatus) return;
 
-            const input = document.getElementById('manualInput').value.trim();
-            if (!input) {
-                resultDiv.innerHTML = '<p class="blocked">入力されたURLがありません。</p>';
-                return;
-            }
+    const input = document.getElementById('manualInput').value.trim();
+    if (!input) {
+        resultDiv.innerHTML = '<p class="blocked">入力されたURLがありません。</p>';
+        return;
+    }
 
-            const proxyList = extractURLs(input);
-            if (proxyList.length === 0) {
-                resultDiv.innerHTML = '<p class="blocked">有効なURLが見つかりません。</p>';
-                return;
-            }
+    const proxyList = extractURLs(input);
+    if (proxyList.length === 0) {
+        resultDiv.innerHTML = '<p class="blocked">有効なURLが見つかりません。</p>';
+        return;
+    }
 
-            resultDiv.innerHTML = '<p class="loading">アクセス可能か確認中...</p>';
-            checkingStatus = "checking";
-            results = [];
+    resultDiv.innerHTML = '<p class="loading">アクセス可能か確認中...</p>';
+    checkingStatus = "checking";
+    results = [];
 
-            const checkPromises = proxyList.map(url => fetch(url, { method: 'HEAD' })
-                .then(response => ({ url, accessible: response.ok }))
-                .catch(() => ({ url, accessible: false }))
-            );
+    const checkPromises = proxyList.map(url => 
+        fetch(corsProxy + url, { method: 'HEAD' })  // CORS proxy added here
+            .then(response => ({ url, accessible: response.ok }))
+            .catch(() => ({ url, accessible: false }))
+    );
 
-            results = await Promise.all(checkPromises);
-            console.log("results:", results);
-            updateUI();
-            resultDiv.innerHTML += '<p><strong>チェックが完了しました!</strong></p>';
-            checkingStatus = null;
-        }
+    results = await Promise.all(checkPromises);
+    updateUI();
+    resultDiv.innerHTML += '<p><strong>チェックが完了しました!</strong></p>';
+    checkingStatus = null;
+}
+
 
         function extractURLs(content) {
             const urlRegex = /(https?:\/\/[^\s/$.?#].[^\s]*)/gi;
