@@ -140,40 +140,79 @@
         <p class="loading">ここに結果が現れます...</p>
     </div>
 
-<script>
-    let results = [];
-    const blockedURLs = JSON.parse(localStorage.getItem('blockedURLs')) || [];
-    let checkingStatus = null;
+    <script>
+        let results = [];
+        const blockedURLs = JSON.parse(localStorage.getItem('blockedURLs')) || [];
+        let checkingStatus = null;
 
-    function extractURLs(content) {
-        const urlRegex = /(https?:\/\/[^\s/$.?#].[^\s]*)/gi;
-        const matches = [...content.matchAll(urlRegex)];
-        return matches.map(match => match[0]);
-    }
+        function extractURLs(content) {
+            const urlRegex = /(https?:\/\/[^\s/$.?#].[^\s]*)/gi;
+            const matches = [...content.matchAll(urlRegex)];
+            return matches.map(match => match[0]);
+        }
 
-    async function fetchAndCheckProxies() {
-        const resultDiv = document.getElementById('result');
-        if (checkingStatus) return;
+        async function fetchAndCheckProxies() {
+            const resultDiv = document.getElementById('result');
+            if (checkingStatus) return;
 
-        resultDiv.innerHTML = '<p class="loading">プロキシを検索中...</p>';
-        checkingStatus = "fetching";
+            resultDiv.innerHTML = '<p class="loading">プロキシを検索中...</p>';
+            checkingStatus = "fetching";
 
-        try {
-            const response = await fetch(`https://corsproxy.io/?https://zhjpwlj.github.io/proxylist/list.txt`);
-            if (!response.ok) {
-                console.error("プロキシリストの取得に失敗:", response.status, response.statusText);
-                throw new Error(`プロキシを検索するのに失敗しました: ${response.statusText}`);
+            try {
+                const response = await fetch(`https://corsproxy.io/?https://zhjpwlj.github.io/proxylist/list.txt`);
+                if (!response.ok) {
+                    console.error("プロキシリストの取得に失敗:", response.status, response.statusText);
+                    throw new Error(`プロキシを検索するのに失敗しました: ${response.statusText}`);
+                }
+
+                const content = await response.text();
+                console.log("取得したコンテンツ:", content);
+
+                const proxyList = extractURLs(content);
+                console.log("抽出されたURLの数:", proxyList.length);
+
+                if (proxyList.length === 0) {
+                    resultDiv.innerHTML = '<p class="blocked">プロキシが発見されませんでした。正規表現を見直してください。</p>';
+                    checkingStatus = null;
+                    return;
+                }
+
+                resultDiv.innerHTML = '<p class="loading">アクセス可能か確認中...</p>';
+                checkingStatus = "checking";
+                results = [];
+
+                const checkPromises = proxyList.map(url => fetch(`https://corsproxy.io/?${url}`)
+                    .then(response => ({ url, accessible: response.ok }))
+                    .catch(() => ({ url, accessible: false }))
+                );
+
+                results = await Promise.all(checkPromises);
+
+                console.log("results:", results);
+                updateUI();
+                resultDiv.innerHTML += '<p><strong>チェックが完了しました!</strong></p>';
+                checkingStatus = null;
+
+            } catch (error) {
+                console.error("エラー:", error);
+                resultDiv.innerHTML = `<p class="blocked">Error: ${error.message}</p>`;
+                checkingStatus = null;
+            }
+        }
+
+        async function checkTypedProxies() {
+            const resultDiv = document.getElementById('result');
+            if (checkingStatus) return;
+
+            const input = document.getElementById('manualInput').value.trim();
+            if (!input) {
+                resultDiv.innerHTML = '<p class="blocked">入力されたURLがありません。</p>';
+                return;
             }
 
-            const content = await response.text();
-            console.log("取得したコンテンツ:", content);
-
-            const proxyList = extractURLs(content);
-            console.log("抽出されたURLの数:", proxyList.length);
-
+            const proxyList = extractURLs(input);
             if (proxyList.length === 0) {
-                resultDiv.innerHTML = '<p class="blocked">プロキシが発見されませんでした。正規表現を見直してください。</p>';
-                checkingStatus = null;
+                resultDiv.innerHTML = '<p class="blocked">有効なURLが見つかりません。</p>';
                 return;
             }
 
@@ -181,86 +220,47 @@
             checkingStatus = "checking";
             results = [];
 
-            const checkPromises = proxyList.map(url => fetch(`https://corsproxy.io/?${url}`)
+             const checkPromises = proxyList.map(url => fetch(`https://corsproxy.io/?${url}`)
                 .then(response => ({ url, accessible: response.ok }))
                 .catch(() => ({ url, accessible: false }))
             );
 
             results = await Promise.all(checkPromises);
-
             console.log("results:", results);
             updateUI();
             resultDiv.innerHTML += '<p><strong>チェックが完了しました!</strong></p>';
             checkingStatus = null;
-
-        } catch (error) {
-            console.error("エラー:", error);
-            resultDiv.innerHTML = `<p class="blocked">Error: ${error.message}</p>`;
-            checkingStatus = null;
-        }
-    }
-
-    async function checkTypedProxies() {
-        const resultDiv = document.getElementById('result');
-        if (checkingStatus) return;
-
-        const input = document.getElementById('manualInput').value.trim();
-        if (!input) {
-            resultDiv.innerHTML = '<p class="blocked">入力されたURLがありません。</p>';
-            return;
         }
 
-        const proxyList = extractURLs(input);
-        if (proxyList.length === 0) {
-            resultDiv.innerHTML = '<p class="blocked">有効なURLが見つかりません。</p>';
-            return;
+        function updateUI() {
+            const resultDiv = document.getElementById('result');
+            const showOnlyAccessible = document.getElementById('filterAccessible').checked;
+
+            const filteredResults = results.filter(res => !blockedURLs.includes(res.url));
+            const displayResults = showOnlyAccessible
+                ? filteredResults.filter(res => res.accessible)
+                : filteredResults;
+
+            resultDiv.innerHTML = displayResults.length
+                ? displayResults
+                    .map(res => `
+                        <p class="${res.accessible ? 'accessible' : 'blocked'}">
+                            ${res.accessible ? '✅ アクセス可能' : '❌ アクセスできません'}:
+                            <a href="${res.url}" target="_blank">${res.url}</a>
+                            <button class="feedback" onclick="markAsBlocked('${res.url}')" ${blockedURLs.includes(res.url) ? 'disabled' : ''}>${blockedURLs.includes(res.url) ? 'ブロック済み' :'ブロックする'}</button>
+                        </p>
+                    `)
+                    .join('')
+                : '<p>プロキシがありません。</p>';
         }
 
-        resultDiv.innerHTML = '<p class="loading">アクセス可能か確認中...</p>';
-        checkingStatus = "checking";
-        results = [];
-
-         const checkPromises = proxyList.map(url => fetch(`https://corsproxy.io/?${url}`)
-            .then(response => ({ url, accessible: response.ok }))
-            .catch(() => ({ url, accessible: false }))
-        );
-
-        results = await Promise.all(checkPromises);
-        console.log("results:", results);
-        updateUI();
-        resultDiv.innerHTML += '<p><strong>チェックが完了しました!</strong></p>';
-        checkingStatus = null;
-    }
-
-    function updateUI() {
-        const resultDiv = document.getElementById('result');
-        const showOnlyAccessible = document.getElementById('filterAccessible').checked;
-
-        const filteredResults = results.filter(res => !blockedURLs.includes(res.url));
-        const displayResults = showOnlyAccessible
-            ? filteredResults.filter(res => res.accessible)
-            : filteredResults;
-
-        resultDiv.innerHTML = displayResults.length
-            ? displayResults
-                .map(res => `
-                    <p class="${res.accessible ? 'accessible' : 'blocked'}">
-                        ${res.accessible ? '✅ アクセス可能' : '❌ アクセスできません'}:
-                        <a href="${res.url}" target="_blank">${res.url}</a>
-                        <button class="feedback" onclick="markAsBlocked('${res.url}')" ${blockedURLs.includes(res.url) ? 'disabled' : ''}>${blockedURLs.includes(res.url) ? 'ブロック済み' :'ブロックする'}</button>
-                    </p>
-                `)
-                .join('')
-            : '<p>プロキシがありません。</p>';
-    }
-
-    function markAsBlocked(url) {
-        if (!blockedURLs.includes(url)) {
-            blockedURLs.push(url);
-            localStorage.setItem('blockedURLs', JSON.stringify(blockedURLs));
-            updateUI();
+        function markAsBlocked(url) {
+            if (!blockedURLs.includes(url)) {
+                blockedURLs.push(url);
+                localStorage.setItem('blockedURLs', JSON.stringify(blockedURLs));
+                updateUI();
+            }
         }
-    }
-</script>
+    </script>
 </body>
 </html>
