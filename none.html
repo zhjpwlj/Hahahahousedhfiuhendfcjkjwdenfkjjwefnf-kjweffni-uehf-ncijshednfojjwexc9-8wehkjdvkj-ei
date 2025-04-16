@@ -1,3 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロキシby zhjpwlj</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #fff;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #0072ff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #005ecf;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background-color: gray;
+            cursor: default;
+        }
+
+        textarea {
+            width: 100%;
+            max-width: 700px;
+            height: 100px;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+            resize: none;
+        }
+
+        .filter {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .filter input {
+            margin-right: 10px;
+        }
+
+        .filter label {
+            font-size: 1rem;
+            color: #fff;
+        }
+
+        .result {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 700px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .result p {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+
+        .accessible {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .blocked {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .feedback {
+            margin-left: 10px;
+            font-size: 0.9rem;
+            background: #dc3545;
+            color: #fff;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .feedback:hover {
+            background: #b02a37;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>プロキシby zhjpwlj</h1>
+    <textarea id="manualInput" placeholder="ここにURLを入力してください。各URLは改行で区切る。"></textarea>
+    <button onclick="checkTypedProxies()">入力されたURLを確認</button>
+    <button onclick="fetchAndCheckProxies()">ウェブサイトからプロキシを検索</button>
+    <div class="filter">
+        <input type="checkbox" id="filterAccessible" onchange="updateUI()">
+        <label for="filterAccessible">使えるプロキシだけを表示</label>
+    </div>
+    <div class="result" id="result">
+        <p class="loading">ここに結果が現れます...</p>
+    </div>
+
 <script>
     let results = [];
     const blockedURLs = JSON.parse(localStorage.getItem('blockedURLs')) || [];
@@ -120,3 +262,5 @@
         }
     }
 </script>
+</body>
+</html>
